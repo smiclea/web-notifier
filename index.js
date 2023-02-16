@@ -12,21 +12,15 @@ const getDataFromPage = async () => {
   await page.waitForSelector(".history-list-item", {
     timeout: 10000,
   });
-  const result = await page.evaluate(() => {
-    const elements = document.querySelectorAll(".history-list-item");
-    const data = [];
-    for (let element of elements) {
-      data.push({
-        date: element.querySelector(".date").innerText,
-        lead: element.querySelector(".lead").innerText,
-        location: element.querySelector(".location").innerText.trim(),
-      });
-    }
-    return data;
-  });
-
+  const data = await page.$$eval(".history-list-item", (elements) =>
+    elements.map((element) => ({
+      date: element.querySelector(".date").innerText,
+      lead: element.querySelector(".lead").innerText,
+      location: element.querySelector(".location").innerText.trim(),
+    }))
+  );
   await browser.close();
-  return result;
+  return data;
 };
 
 const saveData = (data) => {
@@ -79,8 +73,7 @@ Location: ${item.location}
 
 const mainLoop = async () => {
   const data = await getDataFromPage();
-  const isChanged = saveData(data);
-  if (isChanged) {
+  if (saveData(data)) {
     sendMail(data);
   }
 };
