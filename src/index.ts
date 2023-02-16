@@ -5,7 +5,13 @@ import fs from "fs";
 
 dotenv.config();
 
-const getDataFromPage = async () => {
+type DataItem = {
+  date: string;
+  lead: string;
+  location: string;
+};
+
+const getDataFromPage = async (): Promise<DataItem[]> => {
   const browser = await puppeteer.launch();
   const page = await browser.newPage();
   await page.goto(process.env.URL);
@@ -14,16 +20,18 @@ const getDataFromPage = async () => {
   });
   const data = await page.$$eval(".history-list-item", (elements) =>
     elements.map((element) => ({
-      date: element.querySelector(".date").innerText,
-      lead: element.querySelector(".lead").innerText,
-      location: element.querySelector(".location").innerText.trim(),
+      date: (element.querySelector(".date") as HTMLElement).innerText,
+      lead: (element.querySelector(".lead") as HTMLElement).innerText,
+      location: (
+        element.querySelector(".location") as HTMLElement
+      ).innerText.trim(),
     }))
   );
   await browser.close();
   return data;
 };
 
-const saveData = (data) => {
+const saveData = (data: DataItem[]) => {
   let cache = null;
   if (fs.existsSync("cache.json")) {
     cache = fs.readFileSync("cache.json", "utf8");
@@ -37,7 +45,7 @@ const saveData = (data) => {
   return true;
 };
 
-const sendMail = (data) => {
+const sendMail = (data: DataItem[]) => {
   const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
